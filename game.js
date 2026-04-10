@@ -291,3 +291,166 @@ function l2click(idx) {
         document.getElementById("l2msg").style.color = "#555";
     }
 }
+var l3cells = [];
+var L3_STAB = 3;
+var L3_SIGN_X1 = 30, L3_SIGN_X2 = 70;
+var L3_SIGN_Y1 = 8,  L3_SIGN_Y2 = 75;
+
+levelregister[3] = {
+    render: function() {
+        l3cells = [];
+        var id = 0;
+        for (var r = 0; r < 3; r++) {
+            for (var c = 0; c < 3; c++) {
+                l3cells.push({
+                    id: id++,
+                    x: (c / 3) * 100,
+                    y: (r / 3) * 100,
+                    w: 100 / 3,
+                    h: 100 / 3,
+                    depth: 0,
+                    sel: false
+                });
+            }
+        }
+        var area = document.getElementById("puzzle-area");
+        var html = blueHeader("Select all squares with a", "Stop Sign");
+        html += '<div id="l3wrap" style="position:relative;width:100%;height:240px;overflow:hidden;border-radius:4px;background:#b22222;">';
+        html += '<img src="images/stopsign.jpg" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'">';
+        html += '<div id="l3grid" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>';
+        html += '</div>';
+        html += '<p id="l3msg" style="font-size:11px;color:#999;text-align:center;margin:7px 0 0;min-height:15px;">Click the squares containing the stop sign</p>';
+        area.innerHTML = html;
+        l3draw();
+    },
+    reset: function() { levelregister[3].render(); },
+    verify: function() {
+        var wrong = false;
+        var missedAny = false;
+        for (var i = 0; i < l3cells.length; i++) {
+            if (l3cells[i].depth < L3_STAB) continue;
+            var hasSign = l3cellHasSign(l3cells[i]);
+            if (l3cells[i].sel && !hasSign) wrong = true;
+            if (!l3cells[i].sel && hasSign) missedAny = true;
+        }
+        if (!wrong && !missedAny) {
+            verifyLevel(3);
+        } else {
+            failLevel();
+        }
+    }
+};
+
+function l3cellHasSign(cell) {
+    var cx = cell.x + cell.w / 2;
+    var cy = cell.y + cell.h / 2;
+    return cx >= L3_SIGN_X1 && cx <= L3_SIGN_X2 && cy >= L3_SIGN_Y1 && cy <= L3_SIGN_Y2;
+}
+
+function l3draw() {
+    var grid = document.getElementById("l3grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    var anyStable = false;
+    for (var s = 0; s < l3cells.length; s++) {
+        if (l3cells[s].depth >= L3_STAB) { anyStable = true; break; }
+    }
+
+    for (var i = 0; i < l3cells.length; i++) {
+        var cell = l3cells[i];
+        var stable = cell.depth >= L3_STAB;
+
+        var div = document.createElement("div");
+        div.style.position = "absolute";
+        div.style.left = cell.x + "%";
+        div.style.top = cell.y + "%";
+        div.style.width = cell.w + "%";
+        div.style.height = cell.h + "%";
+        div.style.boxSizing = "border-box";
+        div.style.cursor = "pointer";
+        div.style.transition = "background 0.12s";
+
+        if (stable && cell.sel) {
+            div.style.border = "2px solid #4a90d9";
+            div.style.background = "rgba(74,144,217,0.4)";
+        } else if (stable) {
+            div.style.border = "2px solid rgba(255,255,255,0.8)";
+            div.style.background = "rgba(0,0,0,0.04)";
+        } else {
+            div.style.border = "2px solid rgba(255,255,255,0.35)";
+            div.style.background = "transparent";
+        }
+
+        (function(ii) {
+            div.onclick = function() { l3click(ii); };
+        })(i);
+
+        grid.appendChild(div);
+    }
+
+    var btn = document.getElementById("verify-btn");
+    var msg = document.getElementById("l3msg");
+
+    if (!anyStable) {
+        btn.disabled = true;
+        msg.textContent = "Click the squares to zoom in";
+        msg.style.color = "#999";
+        return;
+    }
+
+    var signCells = 0, selSignCells = 0, wrongSel = false;
+    for (var j = 0; j < l3cells.length; j++) {
+        if (l3cells[j].depth < L3_STAB) continue;
+        if (l3cellHasSign(l3cells[j])) {
+            signCells++;
+            if (l3cells[j].sel) selSignCells++;
+        } else {
+            if (l3cells[j].sel) wrongSel = true;
+        }
+    }
+
+    if (signCells > 0 && selSignCells > 0 && selSignCells == signCells && !wrongSel) {
+        btn.disabled = false;
+        msg.textContent = "✓ All stop sign squares selected!";
+        msg.style.color = "#34a853";
+        return;
+    }
+
+    btn.disabled = true;
+    msg.textContent = selSignCells + " / " + signCells + " selected";
+    msg.style.color = "#555";
+}
+function l3click(idx) {
+    var cell = l3cells[idx];
+    if (!cell) return;
+    var msg = document.getElementById("l3msg");
+
+    if (cell.depth >= L3_STAB) {
+        cell.sel = !cell.sel;
+        l3draw();
+        return;
+    }
+
+    var ox = cell.x;
+    var oy = cell.y;
+    var hw = cell.w / 2;
+    var hh = cell.h / 2;
+    var nd = cell.depth + 1;
+
+    l3cells.splice(idx, 1);
+    l3cells.push({ id: Math.random(), x: ox,      y: oy,      w: hw, h: hh, depth: nd, sel: false });
+    l3cells.push({ id: Math.random(), x: ox + hw, y: oy,      w: hw, h: hh, depth: nd, sel: false });
+    l3cells.push({ id: Math.random(), x: ox,      y: oy + hh, w: hw, h: hh, depth: nd, sel: false });
+    l3cells.push({ id: Math.random(), x: ox + hw, y: oy + hh, w: hw, h: hh, depth: nd, sel: false });
+
+    if (nd >= L3_STAB) {
+        msg.textContent = "Now select all squares containing the stop sign";
+        msg.style.color = "#4a90d9";
+    } else {
+        msg.textContent = "Hmm, try clicking again...";
+        msg.style.color = "#999";
+    }
+
+    l3draw();
+}
