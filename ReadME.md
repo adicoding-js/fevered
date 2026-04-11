@@ -44,5 +44,7 @@ Your progress saves automatically so refreshing won't reset you. If you want to 
 - Maybe a timer leaderboard
 
 ---
+⚠️ Disclaimer: In commit 2-3, i used ai for debugging and formatting of code, however this DOES NOT mean it exceeded the limit of 30% ai
+---
 
 Made with 💖 by adicoding-js 
